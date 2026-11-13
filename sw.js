@@ -26,7 +26,7 @@ self.addEventListener("fetch", event => {
       try {
         const fresh = await fetch(request);
         const cache = await caches.open(CACHE_NAME);
-        cache.put("./index.html", fresh.clone());
+        cache.put("./", fresh.clone());
         return fresh;
       } catch (_) {
         return (await caches.match("./index.html")) || (await caches.match("./"));
