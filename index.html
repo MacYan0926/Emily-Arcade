@@ -63,7 +63,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
 <header>
   <div class="eyebrow">WELCOME TO MY LITTLE WORLD</div>
   <h1>EMILY'S<br><span>STRANGE ARCADE</span></h1>
-  <div class="subtitle">SEVEN GAMES · ENDLESS STRANGENESS</div>
+  <div class="subtitle">SIX ORIGINAL GAMES · ONE QUIZ</div>
 </header>
 
 <main>
@@ -75,19 +75,19 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       <p>Original Flash game · Play inside the Arcade</p>
       <div class="play">PLAY GAME ↗</div>
     </a>
-    <a class="game" href="https://web.archive.org/web/20130502103054/http://www.emilystrange.com/beware/games/StrangeInvaders/index.cfm" target="_blank" rel="noopener">
+    <a class="game" href="#strange-invaders" data-game="strange-invaders">
       <div class="number">02 / ARCADE</div><h2>Strange Invaders</h2><p>Emily's strange little invasion.</p><div class="play">OPEN ARCHIVE ↗</div>
     </a>
-    <a class="game" href="https://web.archive.org/web/20130502104114/http://www.emilystrange.com/beware/games/Deathtris/index.cfm" target="_blank" rel="noopener">
+    <a class="game" href="#deathtris" data-game="deathtris">
       <div class="number">03 / PUZZLE</div><h2>Deathtris</h2><p>A deadly twist on a classic puzzle.</p><div class="play">OPEN ARCHIVE ↗</div>
     </a>
-    <a class="game" href="https://web.archive.org/web/20130502120404/http://www.emilystrange.com/beware/games/ninelives/index.cfm" target="_blank" rel="noopener">
+    <a class="game" href="#nine-lives-forever" data-game="nine-lives-forever">
       <div class="number">04 / BOARD GAME</div><h2>Nine Lives Forever</h2><p>Nine lives. How many chances?</p><div class="play">OPEN ARCHIVE ↗</div>
     </a>
-    <a class="game" href="https://web.archive.org/web/20130515043628/http://www.emilystrange.com/beware/games/hexx/index.cfm" target="_blank" rel="noopener">
+    <a class="game" href="#homework-hexx" data-game="homework-hexx">
       <div class="number">05 / PUZZLE</div><h2>Homework Hexx</h2><p>Homework has never been this strange.</p><div class="play">OPEN ARCHIVE ↗</div>
     </a>
-    <a class="game" href="https://web.archive.org/web/20130502113611/http://www.emilystrange.com/beware/games/Spidersandthefly/index.cfm" target="_blank" rel="noopener">
+    <a class="game" href="#spiders-and-the-fly" data-game="spiders-and-the-fly">
       <div class="number">06 / ARCADE</div><h2>Spiders and the Fly</h2><p>Watch out for the little spiders.</p><div class="play">OPEN ARCHIVE ↗</div>
     </a>
     <a class="game" href="https://web.archive.org/web/20130502115524/http://www.emilystrange.com/beware/games/ruesp/index.cfm" target="_blank" rel="noopener">
@@ -100,7 +100,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
 
 <section class="game-modal" id="gameModal" hidden aria-label="Drop Dead Dizzy player">
   <div class="game-bar">
-    <div class="game-name">EMILY'S ARCADE / DROP DEAD DIZZY</div>
+    <div class="game-name" id="gameName">EMILY'S ARCADE / DROP DEAD DIZZY</div>
     <div class="game-actions">
       <button class="arcade-btn" id="chooseGameBtn" type="button">LOAD SWF</button>
       <button class="arcade-btn" id="fullscreenBtn" type="button">FULLSCREEN</button>
@@ -130,10 +130,18 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   const picker = document.getElementById("swfPicker");
   let currentPlayer = null;
   let rufflePromise = null;
+  let currentGameId = "drop-dead-dizzy";
 
   const DB_NAME = "emily-strange-arcade";
   const STORE_NAME = "games";
-  const GAME_KEY = "drop-dead-dizzy";
+  const GAMES = {
+    "drop-dead-dizzy": { title: "Drop Dead Dizzy", fileName: "DropDeadDizzy.swf", base: "https://web.archive.org/web/20130502104752id_/http://www.emilystrange.com/AAEmily/fungames/DropDeadDizzy/" },
+    "strange-invaders": { title: "Strange Invaders", fileName: "StrangeInvaders.swf" },
+    "deathtris": { title: "Deathtris", fileName: "Deathtris.swf" },
+    "nine-lives-forever": { title: "Nine Lives Forever", fileName: "NineLivesForever.swf" },
+    "homework-hexx": { title: "Homework Hexx", fileName: "HomeworkHexx.swf" },
+    "spiders-and-the-fly": { title: "Spiders and the Fly", fileName: "SpidersAndTheFly.swf" }
+  };
 
   function openDatabase() {
     return new Promise((resolve, reject) => {
@@ -148,22 +156,22 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     });
   }
 
-  async function saveGame(blob) {
+  async function saveGame(blob, gameId) {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put(blob, GAME_KEY);
+      tx.objectStore(STORE_NAME).put(blob, gameId);
       tx.oncomplete = () => { db.close(); resolve(); };
       tx.onerror = () => { db.close(); reject(tx.error || new Error("Could not save the game on this device.")); };
       tx.onabort = () => { db.close(); reject(tx.error || new Error("Saving was cancelled.")); };
     });
   }
 
-  async function getSavedGame() {
+  async function getSavedGame(gameId) {
     const db = await openDatabase();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readonly");
-      const request = tx.objectStore(STORE_NAME).get(GAME_KEY);
+      const request = tx.objectStore(STORE_NAME).get(gameId);
       request.onsuccess = () => { const result = request.result || null; db.close(); resolve(result); };
       request.onerror = () => { db.close(); reject(request.error || new Error("Could not read the saved game.")); };
     });
@@ -208,8 +216,9 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     return rufflePromise;
   }
 
-  async function playBlob(blob) {
-    status.textContent = "Loading Ruffle and starting the original game…";
+  async function playBlob(blob, gameId) {
+    const game = GAMES[gameId];
+    status.textContent = "Loading Ruffle and starting " + game.title + "…";
     emptyMessage.textContent = "The original Flash game is loading.";
     await loadRuffleScript();
     if (currentPlayer) currentPlayer.remove();
@@ -220,33 +229,37 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     currentPlayer.style.height = "100%";
     currentPlayer.style.display = "block";
     mount.appendChild(currentPlayer);
-    await currentPlayer.ruffle().load({
+    const loadOptions = {
       data: await blob.arrayBuffer(),
-      swfFileName: "DropDeadDizzy.swf",
+      swfFileName: game.fileName,
       autoplay: "on",
       unmuteOverlay: "visible",
       allowFullscreen: true,
       scale: "showAll",
       forceScale: true,
       quality: "high",
-      backgroundColor: "#000000",
-      base: "https://web.archive.org/web/20130502104752id_/http://www.emilystrange.com/AAEmily/fungames/DropDeadDizzy/"
-    });
-    status.textContent = "Drop Dead Dizzy is ready. Tap the game to play.";
+      backgroundColor: "#000000"
+    };
+    if (game.base) loadOptions.base = game.base;
+    await currentPlayer.ruffle().load(loadOptions);
+    status.textContent = game.title + " is ready. Tap the game to play.";
   }
 
-  async function openGame() {
+  async function openGame(gameId) {
+    currentGameId = gameId;
+    const game = GAMES[gameId];
+    document.getElementById("gameName").textContent = "EMILY'S ARCADE / " + game.title.toUpperCase();
     modal.hidden = false;
     document.body.style.overflow = "hidden";
-    status.textContent = "Checking for a saved copy on this device…";
+    status.textContent = "Checking for " + game.title + " on this device…";
     mount.innerHTML = "";
     mount.appendChild(document.getElementById("emptyState"));
     try {
-      const saved = await getSavedGame();
-      if (saved) await playBlob(saved);
+      const saved = await getSavedGame(gameId);
+      if (saved) await playBlob(saved, gameId);
       else {
-        emptyMessage.textContent = "Choose the DropDeadDizzy.swf file once on this device. It will be saved privately in this browser, not uploaded to the website.";
-        status.textContent = "One-time setup: choose your original SWF file.";
+        emptyMessage.textContent = "Choose the original " + game.fileName + " file once on this device. It will be saved privately in this browser, not uploaded to the website.";
+        status.textContent = "One-time setup: choose " + game.fileName + ".";
       }
     } catch (error) {
       status.textContent = error.message || "Could not access local game storage.";
@@ -264,9 +277,11 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     status.textContent = "Original game · Ruffle Flash emulator";
   }
 
-  document.querySelector('[data-game="drop-dead-dizzy"]').addEventListener("click", event => {
-    event.preventDefault();
-    openGame();
+  document.querySelectorAll("[data-game]").forEach(card => {
+    card.addEventListener("click", event => {
+      event.preventDefault();
+      openGame(card.dataset.game);
+    });
   });
 
   document.getElementById("closeGameBtn").addEventListener("click", closeGame);
@@ -282,8 +297,8 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
         throw new Error("That file is not a valid SWF. Please choose DropDeadDizzy.swf.");
       }
       status.textContent = "Saving the game privately on this device…";
-      await saveGame(file);
-      await playBlob(file);
+      await saveGame(file, currentGameId);
+      await playBlob(file, currentGameId);
     } catch (error) {
       status.textContent = error.message || "The game could not be loaded.";
     } finally {
