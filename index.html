@@ -282,6 +282,9 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
 
   async function playBlob(blob, gameId, fileNameOverride) {
     const game = GAMES[gameId];
+    archivePanel.hidden = true;
+    archiveFrame.src = "about:blank";
+    mount.hidden = false;
     status.textContent = "Loading Ruffle and starting " + game.title + "…";
     emptyMessage.textContent = "The original Flash game is loading.";
     await loadRuffleScript();
@@ -320,8 +323,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     archiveFrame.src = "about:blank";
     mount.hidden = false;
     status.textContent = "Checking for " + game.title + " on this device…";
-    mount.innerHTML = "";
-    mount.appendChild(document.getElementById("emptyState"));
+    mount.replaceChildren(emptyState);
     removeSavedBtn.hidden = true;
     try {
       const saved = await getSavedGame(gameId);
@@ -413,7 +415,10 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     try {
       const header = new TextDecoder().decode(await file.slice(0, 3).arrayBuffer());
       if (!["FWS", "CWS", "ZWS"].includes(header)) {
-        throw new Error("That file is not a valid SWF. Please choose DropDeadDizzy.swf.");
+        throw new Error("That file is not a valid SWF. Please choose an original .swf file.");
+      }
+      if (file.size > 150 * 1024 * 1024) {
+        throw new Error("This SWF is larger than 150 MB. Please choose a smaller file.");
       }
       status.textContent = "Saving " + file.name + " privately on this device…";
       await saveGame(file, currentGameId);
