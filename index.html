@@ -316,26 +316,27 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     emptyTitle.textContent = game.title.toUpperCase();
     modal.hidden = false;
     document.body.style.overflow = "hidden";
-    archiveFrame.hidden = true;
+    archivePanel.hidden = true;
     archiveFrame.src = "about:blank";
-    archiveResults.hidden = true;
-    archiveResults.replaceChildren();
     mount.hidden = false;
     status.textContent = "Checking for " + game.title + " on this device…";
     mount.innerHTML = "";
     mount.appendChild(document.getElementById("emptyState"));
+    removeSavedBtn.hidden = true;
     try {
       const saved = await getSavedGame(gameId);
       if (saved) {
         const storedBlob = saved instanceof Blob ? saved : saved.blob;
         const storedName = saved instanceof Blob ? game.fileName : saved.fileName;
+        removeSavedBtn.hidden = false;
         await playBlob(storedBlob, gameId, storedName);
       }
       else {
-        emptyMessage.textContent = "This game is not installed on this device yet. Search the preservation archive for a playable copy, or import an original SWF file.";
-        status.textContent = "Choose Search Archive to look for a preserved copy.";
+        emptyMessage.textContent = "This game is not installed on this device yet. Search the preservation archive for an archived copy, or import an original SWF file.";
+        status.textContent = "Search the archive or import the original SWF file.";
       }
     } catch (error) {
+      emptyMessage.textContent = "Local storage is unavailable in this browser. You can still try the online archive.";
       status.textContent = error.message || "Could not access local game storage.";
     }
   }
@@ -347,12 +348,11 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       currentPlayer = null;
     }
     archiveFrame.src = "about:blank";
-    archiveFrame.hidden = true;
-    archiveResults.hidden = true;
+    archivePanel.hidden = true;
     mount.hidden = false;
-    const openTab = document.getElementById("openArchiveTab");
-    if (openTab) openTab.remove();
+    removeSavedBtn.hidden = true;
     modal.hidden = true;
+    if (lastFocusedElement && typeof lastFocusedElement.focus === "function") lastFocusedElement.focus();
     document.body.style.overflow = "";
     status.textContent = "Original game · Ruffle / Flashpoint archive";
   }
@@ -360,101 +360,47 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   document.querySelectorAll("[data-game]").forEach(card => {
     card.addEventListener("click", event => {
       event.preventDefault();
+      lastFocusedElement = card;
       openGame(card.dataset.game);
     });
   });
 
-  async function searchFlashpoint(gameId) {
+  function searchFlashpoint(gameId) {
     const game = GAMES[gameId];
     if (!game) return;
-    status.textContent = "Searching Flashpoint Archive for " + game.title + "…";
+    const query = encodeURIComponent('"'+game.title+'"');
+    archiveUrl = "https://ooooooooo.ooo/browse?query=" + query;
+    openArchiveTab.href = archiveUrl;
+    archiveFrame.src = archiveUrl;
+    archivePanel.hidden = false;
     mount.hidden = true;
-    archiveFrame.hidden = true;
-    archiveResults.hidden = false;
-    archiveResults.replaceChildren();
-    const heading = document.createElement("div");
-    heading.className = "player-empty";
-    heading.innerHTML = "<h2>SEARCHING THE ARCHIVE</h2><p>Looking for a preserved original copy of " + game.title.replace(/[&<>"]/g, "") + ".</p>";
-    archiveResults.append(heading);
-    try {
-      const request = async (field) => {
-        const url = new URL("https://db-api.unstable.life/search");
-        url.searchParams.set(field, game.title);
-        url.searchParams.set("fields", "id,title,developer,publisher,platform,library,tags");
-        url.searchParams.set("limit", "15");
-        const response = await fetch(url.toString());
-        if (!response.ok) throw new Error("Archive search returned " + response.status);
-        return response.json();
-      };
-      let matches = await request("title");
-      if (!Array.isArray(matches) || matches.length === 0) matches = await request("smartSearch");
-      archiveResults.replaceChildren();
-      const title = document.createElement("div");
-      title.className = "player-empty";
-      const h = document.createElement("h2");
-      h.textContent = matches.length ? "PRESERVED COPIES FOUND" : "NO MATCH FOUND";
-      const p = document.createElement("p");
-      p.textContent = matches.length ? "Choose a result to open it in the Arcade player." : "No exact match is currently listed. You can still import the original SWF file or open the archive search.";
-      title.append(h,p);
-      archiveResults.append(title);
-      if (!matches.length) {
-        const external = document.createElement("a");
-        external.className = "arcade-btn";
-        external.href = "https://flashpointarchive.org/search";
-        external.target = "_blank";
-        external.rel = "noopener";
-        external.textContent = "OPEN FLASHPOINT SEARCH";
-        external.style.display = "inline-block";
-        external.style.margin = "14px";
-        archiveResults.append(external);
-      }
-      matches.forEach(entry => {
-        const row = document.createElement("div");
-        row.className = "archive-result";
-        const info = document.createElement("div");
-        const name = document.createElement("div");
-        name.className = "archive-result-title";
-        name.textContent = entry.title || game.title;
-        const meta = document.createElement("div");
-        meta.className = "archive-result-meta";
-        meta.textContent = [entry.platform, entry.developer || entry.publisher, entry.library].filter(Boolean).join(" · ");
-        info.append(name,meta);
-        const play = document.createElement("button");
-        play.type = "button";
-        play.className = "arcade-btn primary";
-        play.textContent = "PLAY";
-        play.addEventListener("click", () => {
-          archiveResults.hidden = true;
-          archiveFrame.hidden = false;
-          archiveFrame.src = "https://ooooooooo.ooo/?id=" + encodeURIComponent(entry.id);
-          status.textContent = "Loading preserved copy: " + (entry.title || game.title) + ".";
-          const oldLink = document.getElementById("openArchiveTab");
-          if (oldLink) oldLink.remove();
-          const link = document.createElement("a");
-          link.id = "openArchiveTab";
-          link.href = archiveFrame.src;
-          link.target = "_blank";
-          link.rel = "noopener";
-          link.className = "arcade-btn";
-          link.textContent = "OPEN IN NEW TAB";
-          document.querySelector(".game-actions").prepend(link);
-        });
-        row.append(info,play);
-        archiveResults.append(row);
-      });
-    } catch (error) {
-      archiveResults.replaceChildren();
-      const message = document.createElement("div");
-      message.className = "player-empty";
-      const h = document.createElement("h2");
-      h.textContent = "ARCHIVE SEARCH UNAVAILABLE";
-      const p = document.createElement("p");
-      p.textContent = "The preservation database could not be reached from this browser. Try again later, or import the original SWF file.";
-      message.append(h,p);
-      archiveResults.append(message);
-      status.textContent = error.message || "Could not connect to Flashpoint Archive.";
-    }
+    status.textContent = "Opening Flashpoint search for " + game.title + ". If the archive does not load here, use Open in New Tab.";
   }
+
+  document.getElementById("backToGameBtn").addEventListener("click", () => {
+    archiveFrame.src = "about:blank";
+    archivePanel.hidden = true;
+    mount.hidden = false;
+    status.textContent = "Back in Emily's Arcade.";
+  });
+
+  removeSavedBtn.addEventListener("click", async () => {
+    if (!confirm("Remove the saved copy of " + GAMES[currentGameId].title + " from this device?")) return;
+    try {
+      if (currentPlayer) {
+        try { currentPlayer.ruffle().pause(); } catch (_) {}
+        currentPlayer.remove();
+        currentPlayer = null;
+      }
+      await forgetGame(currentGameId);
+      removeSavedBtn.hidden = true;
+      mount.replaceChildren(emptyState);
+      emptyMessage.textContent = "Saved copy removed from this device. You can import it again whenever you like.";
+      status.textContent = "Local game copy removed.";
+    } catch (error) {
+      status.textContent = error.message || "Could not remove the saved copy.";
+    }
+  });
 
   searchArchiveBtn.addEventListener("click", () => searchFlashpoint(currentGameId));
   document.getElementById("closeGameBtn").addEventListener("click", closeGame);
@@ -471,6 +417,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       }
       status.textContent = "Saving " + file.name + " privately on this device…";
       await saveGame(file, currentGameId);
+      removeSavedBtn.hidden = false;
       await playBlob(file, currentGameId, file.name);
     } catch (error) {
       status.textContent = error.message || "The game could not be loaded.";
@@ -480,19 +427,28 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   });
 
   document.getElementById("fullscreenBtn").addEventListener("click", async () => {
-    if (!currentPlayer) {
-      status.textContent = "Load the game first.";
+    const target = currentPlayer || (archivePanel.hidden ? null : archiveFrame);
+    if (!target) {
+      status.textContent = "Open a game or the archive first.";
       return;
     }
     try {
-      currentPlayer.ruffle().enterFullscreen();
+      if (currentPlayer && currentPlayer.ruffle) currentPlayer.ruffle().enterFullscreen();
+      else if (archiveFrame.requestFullscreen) await archiveFrame.requestFullscreen();
+      else status.textContent = "Use the archive's own fullscreen control, if available.";
     } catch (_) {
-      status.textContent = "Fullscreen is not available in this browser.";
+      status.textContent = "Fullscreen is not available in this browser. Try the archive in a new tab.";
     }
   });
 
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !modal.hidden) closeGame();
+    if (event.key === "Escape" && !modal.hidden && document.fullscreenElement == null) closeGame();
+  });
+
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement && !modal.hidden) {
+      status.textContent = "Returned from fullscreen.";
+    }
   });
 
   window.addEventListener("pagehide", () => {
