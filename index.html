@@ -456,6 +456,14 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     }
   });
 
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {
+        // The arcade remains fully usable when offline caching is unavailable.
+      });
+    }, { once: true });
+  }
+
   window.addEventListener("pagehide", () => {
     if (currentPlayer) {
       try { currentPlayer.ruffle().pause(); } catch (_) {}
