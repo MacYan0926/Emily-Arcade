@@ -33,7 +33,7 @@ Then visit http://localhost:8000.
 
 ## Game files and offline behavior
 
-The six SWF files have been collected separately, but they are not yet bundled into this public repository. To play on an iPhone, transfer the relevant `.swf` file to the iPhone (for example via iCloud Drive or AirDrop), then use **LOAD SWF** in the game window. Imported files are saved in IndexedDB for that browser on that device; they are not uploaded and do not sync between devices. The experimental Flashpoint browser player is a fallback, not a guaranteed iPhone-compatible player. Imported files are saved in IndexedDB for that browser on that device; they are not uploaded and do not sync between devices.
+The six SWF files have been collected separately, but they are not yet bundled into this public repository. To play on an iPhone, transfer the relevant `.swf` file to the iPhone (for example via iCloud Drive or AirDrop), then use **LOAD SWF** in the game window. Imported files are saved in IndexedDB for that browser on that device; they are not uploaded and do not sync between devices. The experimental Flashpoint browser player is a fallback, not a guaranteed iPhone-compatible player.
 
 The app shell is cached after the first successful visit. First-time Ruffle loading and the online archive require an internet connection. Browser playback is not guaranteed for every archived title; some Flashpoint entries require the desktop Flashpoint app.
 
