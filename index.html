@@ -135,7 +135,8 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
 }
 .game-modal.immersive .player-stage{
   flex:1 1 100%;min-height:0;min-width:0;
-  padding:0;overflow:hidden;align-items:center;justify-content:center
+  padding:0;overflow:hidden;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at center,#150d0f 0%,#070707 75%);
 }
 .game-modal.immersive #ruffleMount{
   flex:none;max-width:none;max-height:none;
@@ -274,7 +275,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
 
   const DB_NAME = "emily-strange-arcade";
   const STORE_NAME = "games";
-  const DISPLAY_PREF_KEY = "emily-arcade-display-v1";
+  const DISPLAY_PREF_KEY = "emily-arcade-aspect-mode-v2";
 
   function setMenu(open) {
     modal.classList.toggle("menu-open", Boolean(open));
@@ -283,11 +284,11 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   }
 
   function refreshFillLabel() {
-    const filling = modal.classList.contains("fill-screen");
-    fillButton.textContent = filling ? "KEEP RATIO" : "FILL SCREEN";
-    fillButton.setAttribute("aria-label", filling ?
-      "Show all of the original game without stretching" :
-      "Stretch the original game to fill the screen");
+    const zooming = modal.classList.contains("fill-screen");
+    fillButton.textContent = zooming ? "SHOW WHOLE GAME" : "ZOOM TO FILL";
+    fillButton.setAttribute("aria-label", zooming
+      ? "Restore the complete original game without cropping or distortion"
+      : "Zoom to fill the iPhone screen without distortion; edges may be cropped");
   }
 
   function sizeGameToViewport() {
@@ -307,9 +308,12 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     mount.style.aspectRatio = String(ratio);
     mount.style.width = width + "px";
     mount.style.height = height + "px";
-    // Stretch only when the user chooses screen-fill; this does not restart a game.
+    // Scale X and Y by the SAME factor: the original artwork stays proportional.
+    // 'Fit' shows the complete playfield. Optional 'Zoom' crops overflow instead
+    // of stretching or deforming the game's characters and board.
+    const zoom = Math.max(rect.width / width, rect.height / height);
     mount.style.transform = modal.classList.contains("fill-screen")
-      ? "scale(" + (rect.width / width) + "," + (rect.height / height) + ")"
+      ? "scale(" + zoom + ")"
       : "none";
   }
 
@@ -534,7 +538,8 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     modal.classList.remove("menu-open");
     let pref = null;
     try { pref = localStorage.getItem(DISPLAY_PREF_KEY); } catch (_) {}
-    modal.classList.toggle("fill-screen", pref !== "fit");
+    // Never inherit the previous stretched mode: new default preserves proportions.
+    modal.classList.toggle("fill-screen", pref === "zoom");
     refreshFillLabel();
     setMenu(false);
     document.body.style.overflow = "hidden";
@@ -691,7 +696,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   fillButton.addEventListener("click", () => {
     const fill = !modal.classList.contains("fill-screen");
     modal.classList.toggle("fill-screen", fill);
-    try { localStorage.setItem(DISPLAY_PREF_KEY, fill ? "fill" : "fit"); } catch (_) {}
+    try { localStorage.setItem(DISPLAY_PREF_KEY, fill ? "zoom" : "fit"); } catch (_) {}
     refreshFillLabel();
     setMenu(false);
     requestAnimationFrame(sizeGameToViewport);
