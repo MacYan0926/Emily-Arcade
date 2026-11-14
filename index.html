@@ -31,7 +31,10 @@ main{width:min(900px,92%);margin:40px auto}
 .number{color:#d22;font:11px Arial,sans-serif;letter-spacing:2px}
 .game h2{font-size:20px;margin:15px 0 8px}
 .game p{color:#999;font:12px Arial,sans-serif}
-.play{color:#e32626;font:bold 11px Arial,sans-serif;letter-spacing:2px;margin-top:16px}
+.game-state{margin-top:10px;color:#777;font:10px Arial,sans-serif;letter-spacing:1px}
+.game-state[data-installed="true"]{color:#86bd91}
+.game-state[data-installed="unknown"]{color:#c99b62}
+.play{color:#e32626;font:bold 11px Arial,sans-serif;letter-spacing:2px;margin-top:12px}
 .featured{border-color:#a32626;background:linear-gradient(135deg,#291010,#151515)}
 footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;font:10px/1.7 Arial,sans-serif;letter-spacing:2px}
 .install-card{width:min(900px,92%);margin:0 auto 42px;padding:22px 24px;border:1px solid #492020;background:linear-gradient(135deg,#1d1011,#111)}
@@ -108,23 +111,24 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     <a class="game featured" href="#drop-dead-dizzy" data-game="drop-dead-dizzy">
       <div class="number">01 / PUZZLE</div>
       <h2>Drop Dead Dizzy</h2>
-      <p>Original Flash game · Play inside the Arcade</p>
-      <div class="play">PLAY GAME ↗</div>
+      <p>Original Flash game · Import its SWF or try Flashpoint.</p>
+      <div class="game-state" data-state-for="drop-dead-dizzy" data-installed="unknown">CHECKING THIS DEVICE…</div>
+      <div class="play">OPEN GAME ↗</div>
     </a>
     <a class="game" href="#strange-invaders" data-game="strange-invaders">
-      <div class="number">02 / ARCADE</div><h2>Strange Invaders</h2><p>Import its original SWF file to play here.</p><div class="play">IMPORT ORIGINAL SWF ↗</div>
+      <div class="number">02 / ARCADE</div><h2>Strange Invaders</h2><p>Import its original SWF file to play here.</p><div class="game-state" data-state-for="strange-invaders" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
     </a>
     <a class="game" href="#deathtris" data-game="deathtris">
-      <div class="number">03 / PUZZLE</div><h2>Deathtris</h2><p>Import its original SWF file to play here.</p><div class="play">IMPORT ORIGINAL SWF ↗</div>
+      <div class="number">03 / PUZZLE</div><h2>Deathtris</h2><p>Import its original SWF file to play here.</p><div class="game-state" data-state-for="deathtris" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
     </a>
     <a class="game" href="#nine-lives-forever" data-game="nine-lives-forever">
-      <div class="number">04 / BOARD GAME</div><h2>Nine Lives Forever</h2><p>Import its original SWF file to play here.</p><div class="play">IMPORT ORIGINAL SWF ↗</div>
+      <div class="number">04 / BOARD GAME</div><h2>Nine Lives Forever</h2><p>Import its original SWF file to play here.</p><div class="game-state" data-state-for="nine-lives-forever" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
     </a>
     <a class="game" href="#homework-hexx" data-game="homework-hexx">
-      <div class="number">05 / PUZZLE</div><h2>Homework Hexx</h2><p>Import its original SWF file to play here.</p><div class="play">IMPORT ORIGINAL SWF ↗</div>
+      <div class="number">05 / PUZZLE</div><h2>Homework Hexx</h2><p>Import its original SWF file to play here.</p><div class="game-state" data-state-for="homework-hexx" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
     </a>
     <a class="game" href="#spiders-and-the-fly" data-game="spiders-and-the-fly">
-      <div class="number">06 / ARCADE</div><h2>Spiders and the Fly</h2><p>Import its original SWF file to play here.</p><div class="play">IMPORT ORIGINAL SWF ↗</div>
+      <div class="number">06 / ARCADE</div><h2>Spiders and the Fly</h2><p>Import its original SWF file to play here.</p><div class="game-state" data-state-for="spiders-and-the-fly" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
     </a>
     <a class="game" href="https://web.archive.org/web/20130502115524/http://www.emilystrange.com/beware/games/ruesp/index.cfm" target="_blank" rel="noopener">
       <div class="number">07 / QUIZ</div><h2>R.U.E.S.P. Quiz</h2><p>Discover your strange personality.</p><div class="play">OPEN ORIGINAL PAGE ↗</div>
@@ -258,6 +262,21 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     });
   }
 
+  async function updateInstalledStates() {
+    const labels = Array.from(document.querySelectorAll("[data-state-for]"));
+    await Promise.all(labels.map(async label => {
+      const gameId = label.dataset.stateFor;
+      try {
+        const saved = await getSavedGame(gameId);
+        label.dataset.installed = saved ? "true" : "false";
+        label.textContent = saved ? "INSTALLED ON THIS DEVICE" : "ORIGINAL SWF NOT INSTALLED";
+      } catch (_) {
+        label.dataset.installed = "unknown";
+        label.textContent = "LOCAL STORAGE UNAVAILABLE";
+      }
+    }));
+  }
+
   function loadRuffleScript() {
     if (window.RufflePlayer && window.RufflePlayer.newest) return Promise.resolve();
     if (rufflePromise) return rufflePromise;
@@ -326,7 +345,14 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       backgroundColor: "#000000"
     };
     if (game.base) loadOptions.base = game.base;
-    await currentPlayer.ruffle().load(loadOptions);
+    try {
+      await currentPlayer.ruffle().load(loadOptions);
+    } catch (error) {
+      currentPlayer.remove();
+      currentPlayer = null;
+      mount.replaceChildren(emptyState);
+      throw new Error("Ruffle could not play this SWF: " + (error && error.message ? error.message : "unsupported file or missing game assets."));
+    }
     status.textContent = game.title + " is ready. Tap the game to play.";
   }
 
@@ -344,21 +370,28 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     status.textContent = "Checking for " + game.title + " on this device…";
     mount.replaceChildren(emptyState);
     removeSavedBtn.hidden = true;
+    let saved;
     try {
-      const saved = await getSavedGame(gameId);
-      if (saved) {
-        const storedBlob = saved instanceof Blob ? saved : saved.blob;
-        const storedName = saved instanceof Blob ? game.fileName : saved.fileName;
-        removeSavedBtn.hidden = false;
-        await playBlob(storedBlob, gameId, storedName);
-      }
-      else {
-        emptyMessage.textContent = "No local copy is saved on this device yet. Try the Flashpoint browser player, or import an original SWF file.";
-        status.textContent = "Try Flashpoint or import the original SWF file.";
-      }
+      saved = await getSavedGame(gameId);
     } catch (error) {
-      emptyMessage.textContent = "Local storage is unavailable in this browser. You can still try the online archive.";
+      emptyMessage.textContent = "This browser could not access its local game storage. You can still try Flashpoint or import a SWF if storage becomes available.";
       status.textContent = error.message || "Could not access local game storage.";
+      return;
+    }
+    if (saved) {
+      const storedBlob = saved instanceof Blob ? saved : saved.blob;
+      const storedName = saved instanceof Blob ? game.fileName : saved.fileName;
+      removeSavedBtn.hidden = false;
+      try {
+        await playBlob(storedBlob, gameId, storedName);
+      } catch (error) {
+        mount.replaceChildren(emptyState);
+        emptyMessage.textContent = "Your saved SWF is still stored on this device, but the browser could not start it. Check your connection so Ruffle can load, or try another SWF file.";
+        status.textContent = error.message || "The saved game could not be started.";
+      }
+    } else {
+      emptyMessage.textContent = "No local copy is saved on this device yet. Try the Flashpoint browser player, or import an original SWF file.";
+      status.textContent = "Try Flashpoint or import the original SWF file.";
     }
   }
 
@@ -415,6 +448,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       }
       await forgetGame(currentGameId);
       removeSavedBtn.hidden = true;
+      await updateInstalledStates();
       mount.replaceChildren(emptyState);
       emptyMessage.textContent = "Saved copy removed from this device. You can import it again whenever you like.";
       status.textContent = "Local game copy removed.";
@@ -442,9 +476,13 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       status.textContent = "Saving " + file.name + " privately on this device…";
       await saveGame(file, currentGameId);
       removeSavedBtn.hidden = false;
+      await updateInstalledStates();
       await playBlob(file, currentGameId, file.name);
     } catch (error) {
       status.textContent = error.message || "The game could not be loaded.";
+      if (removeSavedBtn.hidden === false) {
+        emptyMessage.textContent = "Your SWF was saved on this device, but playback did not start. The file is still available to retry.";
+      }
     } finally {
       picker.value = "";
     }
@@ -504,6 +542,18 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     document.documentElement.style.scrollBehavior = "auto";
   }
+
+  updateInstalledStates();
+
+  window.addEventListener("offline", () => {
+    if (!modal.hidden) {
+      status.textContent = "You are offline. Imported SWF files remain saved here, but Ruffle and the online archive may need an internet connection.";
+    }
+  });
+
+  window.addEventListener("online", () => {
+    if (!modal.hidden) status.textContent = "Connection restored. You can retry the game or archive.";
+  });
 
   window.addEventListener("pagehide", () => {
     if (currentPlayer) {
