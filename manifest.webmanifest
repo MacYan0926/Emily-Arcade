@@ -1,11 +1,13 @@
-
 {
+  "id": "./",
   "name": "Emily's Strange Arcade",
   "short_name": "Emily Arcade",
+  "description": "A personal Emily the Strange fan-made arcade for original web games.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#090909",
   "theme_color": "#090909",
   "icons": [
@@ -13,6 +15,12 @@
       "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
       "purpose": "any"
     }
   ]
