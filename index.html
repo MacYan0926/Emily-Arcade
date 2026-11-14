@@ -413,14 +413,14 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   const repeatTimers = new Map();
   const gamepadHints = {
     "drop-dead-dizzy": "Touch the puzzle directly",
-    "strange-invaders": "ARROWS: MOVE · SPACE: FIRE · START: ENTER",
+    "strange-invaders": "DRAG THE SHIP · TAP THE FIRE CONTROL",
     "deathtris": "ARROWS: MOVE / ROTATE · SPACE: ACTION",
     "nine-lives-forever": "Board game · try touching its controls",
     "homework-hexx": "Touch the board directly",
     "spiders-and-the-fly": "← → TURN · ↑ THRUST · SPACE FIRE · SHIFT HYPER"
   };
   const keyboardGames = new Set([
-    "strange-invaders", "deathtris", "spiders-and-the-fly"
+    "deathtris", "spiders-and-the-fly"
   ]);
 
   function syncTouchPad() {
