@@ -54,7 +54,7 @@ def cdx_prefix(prefix):
     query = (
         "https://web.archive.org/cdx/search/cdx?url=" + quote(prefix, safe="") +
         "&matchType=prefix&output=json&filter=statuscode:200" +
-        "&fl=timestamp,original,mimetype,statuscode,length&limit=1000"
+        "&fl=timestamp,original,mimetype,statuscode,length&limit=250"
     )
     try:
         _, raw = get(query, timeout=50)
