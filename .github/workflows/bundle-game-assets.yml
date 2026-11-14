@@ -1,0 +1,33 @@
+name: Bundle original Emily game files
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/bundle-game-assets.yml"
+      - "tools/bundle_game_assets.py"
+permissions:
+  contents: write
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Recover exact SWF files from archived captures
+        run: python tools/bundle_game_assets.py
+      - name: Commit game files to the repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/
+          if git diff --cached --quiet; then
+            echo "Game files are already bundled."
+          else
+            git commit -m "Bundle six original Emily game files"
+            git push origin HEAD:main
+          fi
