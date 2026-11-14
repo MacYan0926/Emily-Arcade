@@ -405,7 +405,8 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     ArrowRight: { key: "ArrowRight", code: "ArrowRight", keyCode: 39 },
     Space:      { key: " ",          code: "Space",      keyCode: 32 },
     Enter:      { key: "Enter",      code: "Enter",      keyCode: 13 },
-    KeyZ:       { key: "z",          code: "KeyZ",       keyCode: 90 }
+    KeyZ:       { key: "z",          code: "KeyZ",       keyCode: 90 },
+    ShiftLeft:  { key: "Shift",      code: "ShiftLeft",  keyCode: 16 }
   };
   const activeVirtualPointers = new Map();
   const pressedVirtualKeys = new Map();
@@ -416,7 +417,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     "deathtris": "ARROWS: MOVE / ROTATE · SPACE: ACTION",
     "nine-lives-forever": "Board game · try touching its controls",
     "homework-hexx": "Touch the board directly",
-    "spiders-and-the-fly": "ARROWS: FLY · SPACE: SHOOT"
+    "spiders-and-the-fly": "← → TURN · ↑ THRUST · SPACE FIRE · SHIFT HYPER"
   };
   const keyboardGames = new Set([
     "strange-invaders", "deathtris", "spiders-and-the-fly"
@@ -430,6 +431,16 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     hudControllerBtn.setAttribute("aria-pressed", String(shown));
     hudControllerBtn.setAttribute("aria-label", shown ? "Hide virtual gamepad" : "Show virtual gamepad");
     touchHint.textContent = gamepadHints[currentGameId] || "ARROWS · SPACE · ENTER · Z";
+    const alternate = touchPad.querySelector(".alternate");
+    if (currentGameId === "spiders-and-the-fly") {
+      alternate.dataset.virtualKey = "ShiftLeft";
+      alternate.textContent = "HYPER";
+      alternate.setAttribute("aria-label", "Shift: hyperspace");
+    } else {
+      alternate.dataset.virtualKey = "KeyZ";
+      alternate.textContent = "Z";
+      alternate.setAttribute("aria-label", "Z: alternative action");
+    }
     if (!shown) releaseVirtualKeys();
   }
 

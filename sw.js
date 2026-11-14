@@ -1,4 +1,4 @@
-const CACHE_NAME = "emily-arcade-shell-v7";
+const CACHE_NAME = "emily-arcade-shell-v8";
 const APP_SHELL = [
   "./",
   "./index.html",
