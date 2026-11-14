@@ -1,0 +1,48 @@
+name: Self-host Ruffle web player
+on:
+  push:
+    paths:
+      - ".github/workflows/vendor-ruffle.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download pinned official Ruffle web package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ruffle
+          npm pack @ruffle-rs/ruffle@0.7.1 --pack-destination /tmp
+          mkdir -p /tmp/emily-ruffle-extract
+          tar -xzf /tmp/ruffle-rs-ruffle-0.7.1.tgz -C /tmp/emily-ruffle-extract
+          cp /tmp/emily-ruffle-extract/package/ruffle.js ruffle/
+          cp /tmp/emily-ruffle-extract/package/*.wasm ruffle/
+          cp /tmp/emily-ruffle-extract/package/core.ruffle.*.js ruffle/
+          cp /tmp/emily-ruffle-extract/package/LICENSE* ruffle/
+          test -s ruffle/ruffle.js
+          test "$(find ruffle -maxdepth 1 -name '*.wasm' | wc -l)" -ge 1
+          echo "Ruffle self-hosted package files ready:"
+          ls -lh ruffle/
+      - name: Publish local player assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ruffle/
+          if git diff --cached --quiet; then
+            echo "Ruffle files are unchanged."
+          else
+            git commit -m "Vendor Ruffle 0.7.1 for local Android and iPhone playback"
+            git push origin HEAD:main
+          fi
