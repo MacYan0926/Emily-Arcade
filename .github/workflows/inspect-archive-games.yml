@@ -1,0 +1,27 @@
+name: Inspect archived Emily game assets
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/inspect-archive-games.yml"
+      - "tools/inspect_wayback_games.py"
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Inspect Wayback captures and discover Flash assets
+        run: python tools/inspect_wayback_games.py
+      - name: Upload inspection report
+        uses: actions/upload-artifact@v4
+        with:
+          name: emily-wayback-game-inspection
+          path: |
+            wayback-game-inspection.json
+            wayback-game-inspection.md
