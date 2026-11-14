@@ -1,4 +1,4 @@
-const CACHE_NAME = "emily-arcade-shell-v2";
+const CACHE_NAME = "emily-arcade-shell-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -59,7 +59,7 @@ self.addEventListener("fetch", event => {
       if (fresh.ok && (
         url.pathname.endsWith(".webmanifest") ||
         url.pathname.endsWith(".svg") ||
-        url.pathname.endsWith(".png")
+        url.pathname.endsWith(".png") ||\n        url.pathname.endsWith(".swf")
       )) {
         const cache = await caches.open(CACHE_NAME);
         await cache.put(request, fresh.clone());

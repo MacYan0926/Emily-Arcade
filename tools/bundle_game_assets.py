@@ -53,10 +53,28 @@ GAMES = [
     },
 ]
 
-def get(url, timeout=45):
-    request = Request(url, headers={"User-Agent": "Mozilla/5.0 EmilyArcadeAssetRecovery/1.0"})
-    with urlopen(request, timeout=timeout) as response:
-        return response.geturl(), response.read()
+def get(url, timeout=60):
+    request = Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (compatible; EmilyArcadeAssetRecovery/1.0)",
+        "Accept": "*/*",
+        "Connection": "close",
+    })
+    last_error = None
+    for attempt in range(7):
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                return response.geturl(), response.read()
+        except HTTPError as exc:
+            if exc.code not in (408, 425, 429, 500, 502, 503, 504):
+                raise
+            last_error = exc
+        except (URLError, TimeoutError, OSError) as exc:
+            last_error = exc
+        if attempt < 6:
+            delay = min(2 ** attempt, 20)
+            print(f"Temporary archive connection error; retry {attempt + 1}/6 in {delay}s: {last_error}", flush=True)
+            time.sleep(delay)
+    raise last_error
 
 def cdx_timestamps(original):
     endpoint = (
@@ -101,10 +119,17 @@ def recover(game):
 
 def main():
     results = []
+    failures = []
     for game in GAMES:
-        result = recover(game)
-        results.append(result)
-        print(f"OK {result['filename']} ({result['bytes']} bytes; SHA-256 matched uploaded file)")
+        try:
+            result = recover(game)
+            results.append(result)
+            print(f"OK {result['filename']} ({result['bytes']} bytes; SHA-256 matched uploaded file)", flush=True)
+        except Exception as exc:
+            failures.append({"game": game["id"], "error": str(exc)})
+            print(f"FAILED {game['id']}: {exc}", flush=True)
+    if failures:
+        raise RuntimeError(json.dumps({"recovered": results, "failures": failures}, ensure_ascii=False))
     Path("games/asset-manifest.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
     print(json.dumps(results, indent=2))
 
