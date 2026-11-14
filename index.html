@@ -100,6 +100,61 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
  #ruffleMount{width:min(100%,490px);height:auto;max-width:100%;max-height:100%;aspect-ratio:49/50}
  .install-card{padding:18px;margin-bottom:30px}
 }
+
+/* Immersive iPhone player: the original four large buttons become an optional menu. */
+.game-hud{display:none}
+.game-modal.immersive .game-hud{
+  display:flex;position:absolute;z-index:30;
+  top:calc(env(safe-area-inset-top) + 5px);left:12px;right:12px;
+  justify-content:space-between;align-items:center;pointer-events:none
+}
+.game-hud button{
+  pointer-events:auto;min-width:48px;min-height:44px;padding:7px 12px;
+  border-radius:22px;border:1px solid #8b3037;background:rgba(15,9,10,.66);
+  color:#fff;font:600 12px Arial,sans-serif;letter-spacing:.4px;
+  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  touch-action:manipulation
+}
+.game-hud button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.game-modal.immersive .game-bar{display:none}
+.game-modal.immersive.menu-open .game-bar{
+  display:flex;position:absolute;z-index:29;
+  top:calc(env(safe-area-inset-top) + 54px);left:12px;right:12px;
+  min-height:0;max-height:45dvh;overflow:auto;
+  padding:12px;border:1px solid #79343c;border-radius:12px;
+  background:rgba(19,14,15,.97);box-shadow:0 18px 40px rgba(0,0,0,.7);
+  flex-direction:column;align-items:stretch;gap:9px
+}
+.game-modal.immersive.menu-open .game-bar .game-name{font-size:11px}
+.game-modal.immersive.menu-open .game-bar .game-actions{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%
+}
+.game-modal.immersive.menu-open .game-bar .game-actions .arcade-btn{
+  width:100%;max-width:100%;min-width:0;white-space:normal;font-size:11px;
+  padding:10px 8px
+}
+.game-modal.immersive .player-stage{
+  flex:1 1 100%;min-height:0;min-width:0;
+  padding:0;overflow:hidden;align-items:center;justify-content:center
+}
+.game-modal.immersive #ruffleMount{
+  flex:none;max-width:none;max-height:none;
+  overflow:hidden;transform-origin:center center;
+  will-change:transform
+}
+.game-modal.immersive #ruffleMount .player-empty{max-width:min(90vw,460px)}
+.game-modal.immersive .player-status,
+.game-modal.immersive .player-note{
+  position:absolute!important;width:1px!important;height:1px!important;
+  overflow:hidden!important;clip-path:inset(50%)!important;
+  white-space:nowrap!important;padding:0!important;margin:0!important
+}
+@media(max-width:520px){
+  .game-modal.immersive .game-hud{left:10px;right:10px}
+  .game-modal.immersive .player-stage{padding:0}
+  .game-modal.immersive #ruffleMount{max-width:none;max-height:none}
+}
+
 </style>
 </head>
 <body>
@@ -146,12 +201,16 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
 <footer>UNOFFICIAL PERSONAL FAN-MADE LAUNCHER · NOT AFFILIATED WITH THE EMILY THE STRANGE RIGHTS HOLDERS<br><br>NO ADS · NO SUBSCRIPTIONS · MADE FOR STRANGE MINDS · 🖤</footer>
 
 <section class="game-modal" id="gameModal" hidden role="dialog" aria-modal="true" aria-labelledby="gameName" aria-label="Emily's Arcade game player">
-  <div class="game-bar">
+  <div class="game-hud">
+    <button id="hudBackBtn" type="button" aria-label="Return to game collection">‹ BACK</button>
+    <button id="hudMenuBtn" type="button" aria-label="Show game controls" aria-expanded="false" aria-controls="playerControls">•••</button>
+  </div>
+  <div class="game-bar" id="playerControls">
     <div class="game-name" id="gameName">EMILY'S ARCADE / DROP DEAD DIZZY</div>
     <div class="game-actions">
       <button class="arcade-btn" id="chooseGameBtn" type="button">LOAD DIFFERENT SWF</button>
       <button class="arcade-btn" id="removeSavedBtn" type="button" hidden>REMOVE SAVED COPY</button>
-      <button class="arcade-btn" id="fullscreenBtn" type="button">FULLSCREEN</button>
+      <button class="arcade-btn" id="fullscreenBtn" type="button">KEEP RATIO</button>
       <button class="arcade-btn primary" id="closeGameBtn" type="button">✕ BACK</button>
     </div>
   </div>
@@ -204,6 +263,9 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   const searchArchiveBtn = document.getElementById("searchArchiveBtn");
   const openOriginalBtn = document.getElementById("openOriginalBtn");
   const removeSavedBtn = document.getElementById("removeSavedBtn");
+  const stage = document.querySelector(".game-modal .player-stage");
+  const hudMenuBtn = document.getElementById("hudMenuBtn");
+  const fillButton = document.getElementById("fullscreenBtn");
   let currentPlayer = null;
   let rufflePromise = null;
   let currentGameId = "drop-dead-dizzy";
@@ -212,6 +274,53 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
 
   const DB_NAME = "emily-strange-arcade";
   const STORE_NAME = "games";
+  const DISPLAY_PREF_KEY = "emily-arcade-display-v1";
+
+  function setMenu(open) {
+    modal.classList.toggle("menu-open", Boolean(open));
+    hudMenuBtn.setAttribute("aria-expanded", String(Boolean(open)));
+    hudMenuBtn.setAttribute("aria-label", open ? "Hide game controls" : "Show game controls");
+  }
+
+  function refreshFillLabel() {
+    const filling = modal.classList.contains("fill-screen");
+    fillButton.textContent = filling ? "KEEP RATIO" : "FILL SCREEN";
+    fillButton.setAttribute("aria-label", filling ?
+      "Show all of the original game without stretching" :
+      "Stretch the original game to fill the screen");
+  }
+
+  function sizeGameToViewport() {
+    if (modal.hidden || !currentPlayer || !mount.contains(currentPlayer)) return;
+    const rect = stage.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    let ratio = 49 / 50;
+    try {
+      const metadata = currentPlayer.ruffle().metadata;
+      if (metadata && metadata.width > 0 && metadata.height > 0) {
+        ratio = metadata.width / metadata.height;
+      }
+    } catch (_) {}
+    const width = Math.min(rect.width, rect.height * ratio);
+    const height = width / ratio;
+    mount.style.flex = "none";
+    mount.style.aspectRatio = String(ratio);
+    mount.style.width = width + "px";
+    mount.style.height = height + "px";
+    // Stretch only when the user chooses screen-fill; this does not restart a game.
+    mount.style.transform = modal.classList.contains("fill-screen")
+      ? "scale(" + (rect.width / width) + "," + (rect.height / height) + ")"
+      : "none";
+  }
+
+  function resetPlayerLayout() {
+    mount.style.width = "";
+    mount.style.height = "";
+    mount.style.flex = "";
+    mount.style.aspectRatio = "";
+    mount.style.transform = "";
+  }
+
   const GAMES = {
     "drop-dead-dizzy": {
       title: "Drop Dead Dizzy",
@@ -395,6 +504,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       throw new Error("Ruffle could not play this SWF: " + (error && error.message ? error.message : "unsupported file or missing game assets."));
     }
     status.textContent = game.title + " is ready. Tap the game to play.";
+    requestAnimationFrame(sizeGameToViewport);
   }
 
   async function fetchBundledGame(game) {
@@ -420,8 +530,15 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     openOriginalBtn.hidden = !game.archiveUrl;
     openOriginalBtn.setAttribute("aria-label", "Open the original archived " + game.title + " page in this tab");
     modal.hidden = false;
+    modal.classList.add("immersive");
+    modal.classList.remove("menu-open");
+    let pref = null;
+    try { pref = localStorage.getItem(DISPLAY_PREF_KEY); } catch (_) {}
+    modal.classList.toggle("fill-screen", pref !== "fit");
+    refreshFillLabel();
+    setMenu(false);
     document.body.style.overflow = "hidden";
-    document.getElementById("closeGameBtn").focus({ preventScroll: true });
+    resetPlayerLayout();
     archivePanel.hidden = true;
     archiveFrame.src = "about:blank";
     mount.hidden = false;
@@ -480,6 +597,9 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     mount.hidden = false;
     removeSavedBtn.hidden = true;
     modal.hidden = true;
+    modal.classList.remove("immersive", "fill-screen", "menu-open");
+    setMenu(false);
+    resetPlayerLayout();
     document.body.style.overflow = "";
     if (lastFocusedElement && typeof lastFocusedElement.focus === "function") lastFocusedElement.focus({ preventScroll: true });
     status.textContent = "Original game · Ruffle / Flashpoint archive";
@@ -562,24 +682,35 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     }
   });
 
-  document.getElementById("fullscreenBtn").addEventListener("click", async () => {
-    const target = currentPlayer || (archivePanel.hidden ? null : archiveFrame);
-    if (!target) {
-      status.textContent = "Open a game or the archive first.";
-      return;
-    }
-    try {
-      if (currentPlayer && currentPlayer.ruffle) currentPlayer.ruffle().enterFullscreen();
-      else if (archiveFrame.requestFullscreen) await archiveFrame.requestFullscreen();
-      else status.textContent = "Use the archive's own fullscreen control, if available.";
-    } catch (_) {
-      status.textContent = "Fullscreen is not available in this browser. Try the archive in a new tab.";
-    }
+  document.getElementById("hudBackBtn").addEventListener("click", closeGame);
+  hudMenuBtn.addEventListener("click", () => setMenu(!modal.classList.contains("menu-open")));
+  stage.addEventListener("pointerdown", () => {
+    if (modal.classList.contains("menu-open")) setMenu(false);
   });
+
+  fillButton.addEventListener("click", () => {
+    const fill = !modal.classList.contains("fill-screen");
+    modal.classList.toggle("fill-screen", fill);
+    try { localStorage.setItem(DISPLAY_PREF_KEY, fill ? "fill" : "fit"); } catch (_) {}
+    refreshFillLabel();
+    setMenu(false);
+    requestAnimationFrame(sizeGameToViewport);
+  });
+
+  window.addEventListener("resize", () => requestAnimationFrame(sizeGameToViewport));
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(() => {
+      if (!modal.hidden) requestAnimationFrame(sizeGameToViewport);
+    }).observe(stage);
+  }
 
   document.addEventListener("keydown", event => {
     if (modal.hidden) return;
-    if (event.key === "Escape" && document.fullscreenElement == null) {
+    if (event.key === "Escape" && modal.classList.contains("menu-open")) {
+      setMenu(false);
+      return;
+    }
+    if (event.key === "Escape") {
       closeGame();
       return;
     }
@@ -596,12 +727,6 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
         event.preventDefault();
         first.focus();
       }
-    }
-  });
-
-  document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement && !modal.hidden) {
-      status.textContent = "Returned from fullscreen.";
     }
   });
 
