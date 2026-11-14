@@ -116,7 +116,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       <div class="play">OPEN GAME ↗</div>
     </a>
     <a class="game" href="#strange-invaders" data-game="strange-invaders">
-      <div class="number">02 / ARCADE</div><h2>Strange Invaders</h2><p>Import its original SWF file to play here.</p><div class="game-state" data-state-for="strange-invaders" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
+      <div class="number">02 / ARCADE</div><h2>Strange Invaders</h2><p>Open the original archived game page, or import its SWF file.</p><div class="game-state" data-state-for="strange-invaders" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
     </a>
     <a class="game" href="#deathtris" data-game="deathtris">
       <div class="number">03 / PUZZLE</div><h2>Deathtris</h2><p>Import its original SWF file to play here.</p><div class="game-state" data-state-for="deathtris" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
@@ -130,7 +130,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     <a class="game" href="#spiders-and-the-fly" data-game="spiders-and-the-fly">
       <div class="number">06 / ARCADE</div><h2>Spiders and the Fly</h2><p>Import its original SWF file to play here.</p><div class="game-state" data-state-for="spiders-and-the-fly" data-installed="unknown">CHECKING THIS DEVICE…</div><div class="play">IMPORT ORIGINAL SWF ↗</div>
     </a>
-    <a class="game" href="https://web.archive.org/web/20130502115524/http://www.emilystrange.com/beware/games/ruesp/index.cfm" target="_blank" rel="noopener">
+    <a class="game" href="https://web.archive.org/web/20130502115524/http://www.emilystrange.com/beware/games/ruesp/index.cfm">
       <div class="number">07 / QUIZ</div><h2>R.U.E.S.P. Quiz</h2><p>Discover your strange personality.</p><div class="play">OPEN ORIGINAL PAGE ↗</div>
     </a>
   </div>
@@ -160,9 +160,11 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
         <h2 id="emptyTitle">DROP DEAD DIZZY</h2>
         <p id="emptyMessage">Choose the original SWF file to install it on this device, or search the preservation archive for a playable copy.</p>
         <div class="game-actions" style="justify-content:center;flex-wrap:wrap">
-          <button class="arcade-btn primary" id="searchArchiveBtn" type="button">SEARCH ARCHIVE</button>
+          <a class="arcade-btn primary" id="openOriginalBtn" href="#" hidden>PLAY ORIGINAL GAME</a>
+          <button class="arcade-btn" id="searchArchiveBtn" type="button">SEARCH ARCHIVE</button>
           <button class="arcade-btn" id="selectSwfBtn" type="button">IMPORT SWF</button>
         </div>
+        <p class="archive-footnote">The original archived page opens in this tab. Use Safari's Back button to return to Emily Arcade.</p>
       </div>
     </div>
     <div id="archivePanel" hidden>
@@ -199,6 +201,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   const archiveFrame = document.getElementById("archiveFrame");
   const openArchiveTab = document.getElementById("openArchiveTab");
   const searchArchiveBtn = document.getElementById("searchArchiveBtn");
+  const openOriginalBtn = document.getElementById("openOriginalBtn");
   const removeSavedBtn = document.getElementById("removeSavedBtn");
   let currentPlayer = null;
   let rufflePromise = null;
@@ -209,12 +212,37 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   const DB_NAME = "emily-strange-arcade";
   const STORE_NAME = "games";
   const GAMES = {
-    "drop-dead-dizzy": { title: "Drop Dead Dizzy", fileName: "DropDeadDizzy.swf", base: "https://web.archive.org/web/20130502104752id_/http://www.emilystrange.com/AAEmily/fungames/DropDeadDizzy/" },
-    "strange-invaders": { title: "Strange Invaders", fileName: "StrangeInvaders.swf" },
-    "deathtris": { title: "Deathtris", fileName: "Deathtris.swf" },
-    "nine-lives-forever": { title: "Nine Lives Forever", fileName: "NineLivesForever.swf" },
-    "homework-hexx": { title: "Homework Hexx", fileName: "HomeworkHexx.swf" },
-    "spiders-and-the-fly": { title: "Spiders and the Fly", fileName: "SpidersAndTheFly.swf" }
+    "drop-dead-dizzy": {
+      title: "Drop Dead Dizzy",
+      fileName: "DropDeadDizzy.swf",
+      base: "https://web.archive.org/web/20130502104752id_/http://www.emilystrange.com/AAEmily/fungames/DropDeadDizzy/",
+      archiveUrl: "https://web.archive.org/web/20130502104752/http://www.emilystrange.com/beware/games/DropDeadDizzy/index.cfm"
+    },
+    "strange-invaders": {
+      title: "Strange Invaders",
+      fileName: "StrangeInvaders.swf",
+      archiveUrl: "https://web.archive.org/web/20130502103054/http://www.emilystrange.com/beware/games/StrangeInvaders/index.cfm"
+    },
+    "deathtris": {
+      title: "Deathtris",
+      fileName: "Deathtris.swf",
+      archiveUrl: "https://web.archive.org/web/20130502104114/http://www.emilystrange.com/beware/games/Deathtris/index.cfm"
+    },
+    "nine-lives-forever": {
+      title: "Nine Lives Forever",
+      fileName: "NineLivesForever.swf",
+      archiveUrl: "https://web.archive.org/web/20130502120404/http://www.emilystrange.com/beware/games/ninelives/index.cfm"
+    },
+    "homework-hexx": {
+      title: "Homework Hexx",
+      fileName: "HomeworkHexx.swf",
+      archiveUrl: "https://web.archive.org/web/20130515043628/http://www.emilystrange.com/beware/games/hexx/index.cfm"
+    },
+    "spiders-and-the-fly": {
+      title: "Spiders and the Fly",
+      fileName: "SpidersAndTheFly.swf",
+      archiveUrl: "https://web.archive.org/web/20130523023053/http://www.emilystrange.com/beware/games/Spidersandthefly/index.cfm"
+    }
   };
 
   function openDatabase() {
@@ -361,6 +389,9 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     const game = GAMES[gameId];
     document.getElementById("gameName").textContent = "EMILY'S ARCADE / " + game.title.toUpperCase();
     emptyTitle.textContent = game.title.toUpperCase();
+    openOriginalBtn.href = game.archiveUrl || "#";
+    openOriginalBtn.hidden = !game.archiveUrl;
+    openOriginalBtn.setAttribute("aria-label", "Open the original archived " + game.title + " page in this tab");
     modal.hidden = false;
     document.body.style.overflow = "hidden";
     document.getElementById("closeGameBtn").focus({ preventScroll: true });
