@@ -156,6 +156,65 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   .game-modal.immersive #ruffleMount{max-width:none;max-height:none}
 }
 
+
+/* Emily's touch controls: a translucent keyboard adapter, not a replacement game. */
+.game-modal .hud-right{display:flex;align-items:center;gap:9px;pointer-events:none}
+.game-modal .hud-right button{pointer-events:auto}
+.game-modal .game-hud button[aria-pressed="true"]{background:rgba(159,26,36,.85);border-color:#df4a53}
+.touch-pad[hidden]{display:none!important}
+.touch-pad{
+  position:absolute;z-index:27;
+  left:max(9px,env(safe-area-inset-left));right:max(9px,env(safe-area-inset-right));
+  bottom:calc(env(safe-area-inset-bottom) + 8px);
+  display:flex;justify-content:space-between;align-items:end;gap:8px;
+  pointer-events:none;user-select:none;-webkit-user-select:none;
+  -webkit-touch-callout:none
+}
+.touch-pad .d-pad{
+  display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);
+  gap:3px;pointer-events:none
+}
+.touch-pad .d-pad .up{grid-column:2;grid-row:1}
+.touch-pad .d-pad .left{grid-column:1;grid-row:2}
+.touch-pad .d-pad .down{grid-column:2;grid-row:2}
+.touch-pad .d-pad .right{grid-column:3;grid-row:2}
+.touch-pad .button-pad{
+  display:grid;grid-template-columns:repeat(2,60px);grid-template-rows:repeat(2,44px);
+  gap:5px;pointer-events:none
+}
+.touch-pad .button-pad .fire{grid-column:1;grid-row:1 / 3}
+.touch-pad .button-pad .start{grid-column:2;grid-row:1}
+.touch-pad .button-pad .alternate{grid-column:2;grid-row:2}
+.touch-pad button{
+  pointer-events:auto;
+  display:flex;align-items:center;justify-content:center;
+  min-width:0;min-height:44px;
+  border:1px solid rgba(210,54,63,.75);
+  border-radius:12px;background:rgba(17,10,13,.65);
+  color:#fff;font:700 12px Arial,sans-serif;letter-spacing:.5px;
+  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  touch-action:none;user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent
+}
+.touch-pad .fire{border-radius:22px;border-color:#d44450;background:rgba(129,18,29,.70)}
+.touch-pad button:active,.touch-pad button.is-pressed{background:rgba(212,39,52,.9);border-color:#fff}
+.touch-pad button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.touch-pad .touch-hint{
+  position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
+  padding:3px 8px 7px;font:10px Arial,sans-serif;letter-spacing:.6px;
+  color:#d7b8bb;text-align:center;white-space:nowrap;
+  text-shadow:0 1px 4px #000;pointer-events:none
+}
+@media(max-width:350px){
+  .touch-pad .d-pad{grid-template-columns:repeat(3,41px);grid-template-rows:repeat(2,44px);gap:2px}
+  .touch-pad .button-pad{grid-template-columns:repeat(2,53px)}
+}
+@media(max-height:540px){
+  .touch-pad .d-pad{grid-template-rows:repeat(2,38px)}
+  .touch-pad .button-pad{grid-template-rows:repeat(2,38px)}
+  .touch-pad button{min-height:38px}
+}
+
 </style>
 </head>
 <body>
@@ -204,7 +263,10 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
 <section class="game-modal" id="gameModal" hidden role="dialog" aria-modal="true" aria-labelledby="gameName" aria-label="Emily's Arcade game player">
   <div class="game-hud">
     <button id="hudBackBtn" type="button" aria-label="Return to game collection">‹ BACK</button>
-    <button id="hudMenuBtn" type="button" aria-label="Show game controls" aria-expanded="false" aria-controls="playerControls">•••</button>
+    <div class="hud-right">
+      <button id="hudControllerBtn" type="button" aria-label="Show mobile controller" aria-pressed="false" title="Virtual gamepad">🎮</button>
+      <button id="hudMenuBtn" type="button" aria-label="Show game controls" aria-expanded="false" aria-controls="playerControls">•••</button>
+    </div>
   </div>
   <div class="game-bar" id="playerControls">
     <div class="game-name" id="gameName">EMILY'S ARCADE / DROP DEAD DIZZY</div>
@@ -244,6 +306,20 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       <div class="archive-footnote">9o3o is an experimental browser player. Some archived entries may not run in a browser or may require the desktop Flashpoint app.</div>
     </div>
   </div>
+  <div class="touch-pad" id="touchPad" hidden role="group" aria-label="Mobile keyboard controls">
+    <div class="touch-hint" id="touchHint">ARROWS · SPACE · ENTER · Z</div>
+    <div class="d-pad" aria-label="Direction keys">
+      <button type="button" class="up" data-virtual-key="ArrowUp" aria-label="Up arrow">▲</button>
+      <button type="button" class="left" data-virtual-key="ArrowLeft" aria-label="Left arrow">◀</button>
+      <button type="button" class="down" data-virtual-key="ArrowDown" aria-label="Down arrow">▼</button>
+      <button type="button" class="right" data-virtual-key="ArrowRight" aria-label="Right arrow">▶</button>
+    </div>
+    <div class="button-pad" aria-label="Action keys">
+      <button type="button" class="fire" data-virtual-key="Space" aria-label="Space or fire">SPACE</button>
+      <button type="button" class="start" data-virtual-key="Enter" aria-label="Enter or start">START</button>
+      <button type="button" class="alternate" data-virtual-key="KeyZ" aria-label="Z alternative action">Z</button>
+    </div>
+  </div>
   <div class="player-status" id="playerStatus" role="status" aria-live="polite">Original game · Ruffle / Flashpoint archive</div>
   <div class="player-note">All six original games are included. After a game loads once, its file is saved on this device for quicker repeat play; Ruffle needs an internet connection the first time.</div>
   <input class="hidden-file" id="swfPicker" type="file" accept=".swf,application/x-shockwave-flash">
@@ -267,6 +343,10 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   const stage = document.querySelector(".game-modal .player-stage");
   const hudMenuBtn = document.getElementById("hudMenuBtn");
   const fillButton = document.getElementById("fullscreenBtn");
+  const hudControllerBtn = document.getElementById("hudControllerBtn");
+  const touchPad = document.getElementById("touchPad");
+  const touchHint = document.getElementById("touchHint");
+  let padUserOverride = null;
   let currentPlayer = null;
   let rufflePromise = null;
   let currentGameId = "drop-dead-dizzy";
@@ -314,6 +394,137 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       ? "scale(" + zoom + ")"
       : "none";
   }
+
+
+  // A visible gamepad does not guarantee every legacy SWF understands these keys.
+  // Ruffle only processes keyboard events while its player has focus.
+  const VIRTUAL_KEYS = {
+    ArrowUp:    { key: "ArrowUp",    code: "ArrowUp",    keyCode: 38 },
+    ArrowDown:  { key: "ArrowDown",  code: "ArrowDown",  keyCode: 40 },
+    ArrowLeft:  { key: "ArrowLeft",  code: "ArrowLeft",  keyCode: 37 },
+    ArrowRight: { key: "ArrowRight", code: "ArrowRight", keyCode: 39 },
+    Space:      { key: " ",          code: "Space",      keyCode: 32 },
+    Enter:      { key: "Enter",      code: "Enter",      keyCode: 13 },
+    KeyZ:       { key: "z",          code: "KeyZ",       keyCode: 90 }
+  };
+  const activeVirtualPointers = new Map();
+  const pressedVirtualKeys = new Map();
+  const repeatTimers = new Map();
+  const gamepadHints = {
+    "drop-dead-dizzy": "Touch the puzzle directly",
+    "strange-invaders": "ARROWS: MOVE · SPACE: FIRE · START: ENTER",
+    "deathtris": "ARROWS: MOVE / ROTATE · SPACE: ACTION",
+    "nine-lives-forever": "Board game · try touching its controls",
+    "homework-hexx": "Touch the board directly",
+    "spiders-and-the-fly": "ARROWS: FLY · SPACE: SHOOT"
+  };
+  const keyboardGames = new Set([
+    "strange-invaders", "deathtris", "spiders-and-the-fly"
+  ]);
+
+  function syncTouchPad() {
+    const shown = !modal.hidden &&
+      (padUserOverride === null ? keyboardGames.has(currentGameId) : padUserOverride) &&
+      archivePanel.hidden;
+    touchPad.hidden = !shown;
+    hudControllerBtn.setAttribute("aria-pressed", String(shown));
+    hudControllerBtn.setAttribute("aria-label", shown ? "Hide virtual gamepad" : "Show virtual gamepad");
+    touchHint.textContent = gamepadHints[currentGameId] || "ARROWS · SPACE · ENTER · Z";
+    if (!shown) releaseVirtualKeys();
+  }
+
+  function virtualKeyEvent(code, type, repeated = false) {
+    if (!currentPlayer || !mount.contains(currentPlayer) || modal.hidden) return;
+    const definition = VIRTUAL_KEYS[code];
+    if (!definition) return;
+    // Prevent the overlaid HTML buttons from stealing game keyboard focus.
+    try { currentPlayer.focus({ preventScroll: true }); } catch (_) { currentPlayer.focus(); }
+    const keyboardEvent = new KeyboardEvent(type, {
+      key: definition.key, code: definition.code, keyCode: definition.keyCode,
+      which: definition.keyCode, location: 0,
+      bubbles: true, cancelable: true, composed: true, repeat: repeated
+    });
+    currentPlayer.dispatchEvent(keyboardEvent);
+  }
+
+  function releaseVirtualKeys() {
+    for (const timer of repeatTimers.values()) clearInterval(timer);
+    repeatTimers.clear();
+    for (const code of pressedVirtualKeys.keys()) virtualKeyEvent(code, "keyup");
+    pressedVirtualKeys.clear();
+    activeVirtualPointers.clear();
+    touchPad.querySelectorAll(".is-pressed").forEach(b => b.classList.remove("is-pressed"));
+  }
+
+  function beginVirtualPress(button, pointerId) {
+    if (!currentPlayer || modal.hidden) return;
+    if (activeVirtualPointers.has(pointerId)) return;
+    const code = button.dataset.virtualKey;
+    if (!VIRTUAL_KEYS[code]) return;
+    activeVirtualPointers.set(pointerId, { button, code });
+    const holders = pressedVirtualKeys.get(code) || new Set();
+    const wasHeld = holders.size > 0;
+    holders.add(pointerId);
+    pressedVirtualKeys.set(code, holders);
+    button.classList.add("is-pressed");
+    if (!wasHeld) {
+      virtualKeyEvent(code, "keydown");
+      // Keep held arrows responsive in Flash titles that rely on key repeat.
+      // Games that poll the key state still see one uninterrupted hold.
+      if (code.startsWith("Arrow")) {
+        const timer = setInterval(() => {
+          if (pressedVirtualKeys.has(code) && currentPlayer && !modal.hidden) {
+            virtualKeyEvent(code, "keydown", true);
+          }
+        }, 135);
+        repeatTimers.set(code, timer);
+      }
+    }
+  }
+
+  function endVirtualPress(pointerId) {
+    const active = activeVirtualPointers.get(pointerId);
+    if (!active) return;
+    activeVirtualPointers.delete(pointerId);
+    const { button, code } = active;
+    button.classList.remove("is-pressed");
+    const holders = pressedVirtualKeys.get(code);
+    if (!holders) return;
+    holders.delete(pointerId);
+    if (holders.size === 0) {
+      pressedVirtualKeys.delete(code);
+      const timer = repeatTimers.get(code);
+      if (timer) clearInterval(timer);
+      repeatTimers.delete(code);
+      virtualKeyEvent(code, "keyup");
+    }
+  }
+
+  touchPad.querySelectorAll("[data-virtual-key]").forEach(button => {
+    button.addEventListener("pointerdown", event => {
+      if (event.button > 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      try { button.setPointerCapture(event.pointerId); } catch (_) {}
+      beginVirtualPress(button, event.pointerId);
+    });
+    for (const eventType of ["pointerup", "pointercancel", "lostpointercapture"]) {
+      button.addEventListener(eventType, event => {
+        event.preventDefault();
+        endVirtualPress(event.pointerId);
+      });
+    }
+    button.addEventListener("contextmenu", event => event.preventDefault());
+  });
+  window.addEventListener("blur", releaseVirtualKeys);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) releaseVirtualKeys();
+  });
+  hudControllerBtn.addEventListener("click", () => {
+    padUserOverride = touchPad.hidden;
+    syncTouchPad();
+    setMenu(false);
+  });
 
   function resetPlayerLayout() {
     mount.style.width = "";
@@ -483,10 +694,12 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     status.textContent = "Loading Ruffle and starting " + game.title + "…";
     emptyMessage.textContent = "The original Flash game is loading.";
     await loadRuffleScript();
+    releaseVirtualKeys();
     if (currentPlayer) currentPlayer.remove();
     mount.innerHTML = "";
     const ruffle = window.RufflePlayer.newest();
     currentPlayer = ruffle.createPlayer();
+    currentPlayer.tabIndex = 0;
     currentPlayer.style.width = "100%";
     currentPlayer.style.height = "100%";
     currentPlayer.style.display = "block";
@@ -538,6 +751,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     openOriginalBtn.hidden = !game.archiveUrl;
     openOriginalBtn.setAttribute("aria-label", "Open the original archived " + game.title + " page in this tab");
     modal.hidden = false;
+    padUserOverride = null;
     modal.classList.add("immersive");
     modal.classList.remove("menu-open");
     let pref = null;
@@ -551,6 +765,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     archivePanel.hidden = true;
     archiveFrame.src = "about:blank";
     mount.hidden = false;
+    syncTouchPad();
     status.textContent = "Loading " + game.title + " from Emily's Arcade…";
     emptyMessage.textContent = "The original game is loading. No separate file import is needed.";
     mount.replaceChildren(emptyState);
@@ -596,6 +811,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   }
 
   function closeGame() {
+    releaseVirtualKeys();
     if (currentPlayer) {
       try { currentPlayer.ruffle().pause(); } catch (_) {}
       currentPlayer.remove();
@@ -606,6 +822,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     mount.hidden = false;
     removeSavedBtn.hidden = true;
     modal.hidden = true;
+    touchPad.hidden = true;
     modal.classList.remove("immersive", "fill-screen", "menu-open");
     setMenu(false);
     resetPlayerLayout();
@@ -631,6 +848,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     archiveFrame.src = archiveUrl;
     archivePanel.hidden = false;
     mount.hidden = true;
+    syncTouchPad();
     status.textContent = "Trying a matching Flashpoint entry for " + game.title + ". If it does not load here, use Try in New Tab or Browse Catalog.";
   }
 
@@ -638,6 +856,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     archiveFrame.src = "about:blank";
     archivePanel.hidden = true;
     mount.hidden = false;
+    syncTouchPad();
     status.textContent = "Back in Emily's Arcade.";
   });
 
