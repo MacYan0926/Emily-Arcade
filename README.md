@@ -7,10 +7,10 @@ A personal, mobile-first fan-made launcher for the original Emily the Strange br
 ## What's included
 
 - Six Emily browser-game entries: Drop Dead Dizzy, Strange Invaders, Deathtris, Nine Lives Forever, Homework Hexx, and Spiders and the Fly.
-- Ruffle player for SWF files imported on each device.
+- Ruffle player that automatically loads the six bundled original SWF files on every device.
 - A Flashpoint 9o3o browser-player attempt and a link to the Flashpoint catalog.
 - R.U.E.S.P. Quiz is omitted because its playable SWF was not recovered.
-- Per-game local saves in IndexedDB, plus remove-saved-copy controls.
+- Per-game local saves in IndexedDB, plus remove-saved-copy controls; bundled games can play even when IndexedDB is unavailable.
 - A standalone Home Screen experience, an iPhone touch-friendly layout, fullscreen controls, and a cached app shell.
 
 ## Use on iPhone
@@ -33,9 +33,9 @@ Then visit http://localhost:8000.
 
 ## Game files and offline behavior
 
-The six SWF files have been collected separately, but they are not yet bundled into this public repository. To play on an iPhone, transfer the relevant `.swf` file to the iPhone (for example via iCloud Drive or AirDrop), then use **LOAD SWF** in the game window. Imported files are saved in IndexedDB for that browser on that device; they are not uploaded and do not sync between devices. The experimental Flashpoint browser player is a fallback, not a guaranteed iPhone-compatible player.
+All six recovered original SWF files are bundled in the public `games/` folder and load automatically when a game is opened. You do not need to transfer files from a Mac or import them manually on an iPhone. The game file is also saved in IndexedDB after its first successful load when the browser allows local storage; playback itself does not depend on IndexedDB. **LOAD DIFFERENT SWF** remains available if you want to try another file.
 
-The app shell is cached after the first successful visit. First-time Ruffle loading and the online archive require an internet connection. Browser playback is not guaranteed for every archived title; some Flashpoint entries require the desktop Flashpoint app.
+The app shell and fetched game files are cached by the service worker after loading. First-time Ruffle loading still requires an internet connection. Browser playback is not guaranteed for every archived title; some Flashpoint entries require the desktop Flashpoint app.
 
 ## Project notes
 
