@@ -215,6 +215,44 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   .touch-pad button{min-height:38px}
 }
 
+
+/* The game itself loads directly; archive links are never part of the loading screen. */
+.game-extra{margin-top:8px;width:100%;border-top:1px solid #4a2729;padding-top:10px}
+.game-extra summary{padding:8px 4px;color:#c9afb0;font:11px Arial,sans-serif;letter-spacing:1.2px;cursor:pointer;touch-action:manipulation}
+.game-extra .game-extra-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.game-extra .game-extra-actions>*{flex:1 1 auto;min-width:0;text-align:center;text-decoration:none}
+.game-modal.immersive.menu-open .game-extra{width:100%;flex:0 0 auto}
+.game-loading-overlay[hidden]{display:none!important}
+.game-loading-overlay{
+  position:absolute;inset:0;z-index:26;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;padding:28px 22px;background:#080707;text-align:center;
+  color:#f4eeee;overflow:auto
+}
+.game-loading-overlay .loading-mark{font:46px Georgia,serif;line-height:1;color:#cf2b35;text-shadow:0 0 22px #4a0c12}
+.game-loading-overlay .loading-name{
+  font:bold clamp(20px,5.5vw,28px)/1.15 Georgia,serif;
+  color:#f3e8e8;overflow-wrap:anywhere;max-width:min(85vw,430px)
+}
+.game-loading-overlay .loading-text{
+  color:#bda8ac;font:13px/1.6 Arial,sans-serif;
+  max-width:min(85vw,400px);margin:0
+}
+.game-loading-overlay .loading-track{
+  height:3px;width:min(60vw,210px);border-radius:4px;
+  background:#382024;overflow:hidden
+}
+.game-loading-overlay .loading-track span{
+  display:block;width:38%;height:100%;border-radius:4px;background:#d32d36;
+  animation:emily-load-slide 1.3s ease-in-out infinite alternate
+}
+@keyframes emily-load-slide{from{transform:translateX(-110%)}to{transform:translateX(310%)}}
+@media(prefers-reduced-motion:reduce){.game-loading-overlay .loading-track span{animation:none;width:100%}}
+.game-loading-overlay.load-error .loading-track{display:none}
+.game-loading-overlay.load-error .loading-mark{font-size:35px}
+.game-loading-overlay #retryGameBtn{margin-top:10px;padding:12px 28px;min-width:140px}
+.game-loading-overlay #retryGameBtn[hidden]{display:none!important}
+
 </style>
 </head>
 <body>
@@ -276,19 +314,28 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       <button class="arcade-btn" id="fullscreenBtn" type="button">KEEP RATIO</button>
       <button class="arcade-btn primary" id="closeGameBtn" type="button">✕ BACK</button>
     </div>
+    <details class="game-extra" id="gameExtra">
+      <summary>ADVANCED / TROUBLESHOOTING</summary>
+      <div class="game-extra-actions">
+        <a class="arcade-btn" id="openOriginalBtn" href="#" hidden target="_blank" rel="noopener noreferrer">ORIGINAL ARCHIVE ↗</a>
+        <button class="arcade-btn" id="searchArchiveBtn" type="button">SEARCH ARCHIVE</button>
+        <button class="arcade-btn" id="selectSwfBtn" type="button">IMPORT SWF</button>
+      </div>
+    </details>
   </div>
   <div class="player-stage">
     <div id="ruffleMount">
       <div class="player-empty" id="emptyState">
         <h2 id="emptyTitle">DROP DEAD DIZZY</h2>
-        <p id="emptyMessage">The original game is included in this arcade and loads automatically. You can also load a different SWF file if you have one.</p>
-        <div class="game-actions" style="justify-content:center;flex-wrap:wrap">
-          <a class="arcade-btn primary" id="openOriginalBtn" href="#" hidden>VIEW ORIGINAL ARCHIVE ↗</a>
-          <button class="arcade-btn" id="searchArchiveBtn" type="button">SEARCH ARCHIVE</button>
-          <button class="arcade-btn" id="selectSwfBtn" type="button">IMPORT SWF</button>
-        </div>
-        <p class="archive-footnote">Archived pages are not guaranteed to run on iPhone. Use Safari Back to return to the Arcade.</p>
+        <p id="emptyMessage">Opening the original game…</p>
       </div>
+    </div>
+    <div class="game-loading-overlay" id="gameLoadingOverlay" hidden role="status" aria-live="polite">
+      <div class="loading-mark" aria-hidden="true">✦</div>
+      <div class="loading-name" id="loadingGameTitle">EMILY'S ARCADE</div>
+      <div class="loading-track" aria-hidden="true"><span></span></div>
+      <p class="loading-text" id="loadingGameText">Opening the original game…</p>
+      <button class="arcade-btn primary" id="retryGameBtn" type="button" hidden>TRY AGAIN</button>
     </div>
     <div id="archivePanel" hidden>
       <div class="archive-head">
@@ -340,6 +387,13 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   const searchArchiveBtn = document.getElementById("searchArchiveBtn");
   const openOriginalBtn = document.getElementById("openOriginalBtn");
   const removeSavedBtn = document.getElementById("removeSavedBtn");
+  const loadingOverlay = document.getElementById("gameLoadingOverlay");
+  const loadingGameTitle = document.getElementById("loadingGameTitle");
+  const loadingGameText = document.getElementById("loadingGameText");
+  const retryGameBtn = document.getElementById("retryGameBtn");
+  const gameExtra = document.getElementById("gameExtra");
+  let activeLoadId = 0;
+  let loadingNoteTimer = null;
   const stage = document.querySelector(".game-modal .player-stage");
   const hudMenuBtn = document.getElementById("hudMenuBtn");
   const fillButton = document.getElementById("fullscreenBtn");
@@ -356,6 +410,37 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   const DB_NAME = "emily-strange-arcade";
   const STORE_NAME = "games";
   const DISPLAY_PREF_KEY = "emily-arcade-aspect-mode-v3";
+
+  function showGameLoading(gameId) {
+    clearTimeout(loadingNoteTimer);
+    loadingOverlay.hidden = false;
+    loadingOverlay.classList.remove("load-error");
+    retryGameBtn.hidden = true;
+    const game = GAMES[gameId];
+    loadingGameTitle.textContent = game ? game.title.toUpperCase() : "EMILY'S ARCADE";
+    loadingGameText.textContent = "Opening the original game…";
+    loadingNoteTimer = setTimeout(() => {
+      if (!loadingOverlay.hidden && !loadingOverlay.classList.contains("load-error")) {
+        loadingGameText.textContent = "Still loading — this vintage game may need a moment.";
+      }
+    }, 6500);
+  }
+
+  function showGameError(message, loadId) {
+    if (loadId !== activeLoadId || modal.hidden) return;
+    clearTimeout(loadingNoteTimer);
+    loadingOverlay.hidden = false;
+    loadingOverlay.classList.add("load-error");
+    loadingGameText.textContent = message || "The game couldn't start. Please try again.";
+    retryGameBtn.hidden = false;
+    status.textContent = loadingGameText.textContent;
+  }
+
+  function finishGameLoading(loadId) {
+    if (loadId !== activeLoadId || modal.hidden) return;
+    clearTimeout(loadingNoteTimer);
+    loadingOverlay.hidden = true;
+  }
 
   function setMenu(open) {
     modal.classList.toggle("menu-open", Boolean(open));
@@ -697,7 +782,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     return rufflePromise;
   }
 
-  async function playBlob(blob, gameId, fileNameOverride) {
+  async function playBlob(blob, gameId, fileNameOverride, loadId = activeLoadId) {
     const game = GAMES[gameId];
     archivePanel.hidden = true;
     archiveFrame.src = "about:blank";
@@ -705,11 +790,13 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     status.textContent = "Loading Ruffle and starting " + game.title + "…";
     emptyMessage.textContent = "The original Flash game is loading.";
     await loadRuffleScript();
+    if (loadId !== activeLoadId || modal.hidden) return;
     releaseVirtualKeys();
     if (currentPlayer) currentPlayer.remove();
     mount.innerHTML = "";
     const ruffle = window.RufflePlayer.newest();
     currentPlayer = ruffle.createPlayer();
+    const player = currentPlayer;
     currentPlayer.tabIndex = 0;
     currentPlayer.style.width = "100%";
     currentPlayer.style.height = "100%";
@@ -728,15 +815,24 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     };
     if (game.base) loadOptions.base = game.base;
     try {
-      await currentPlayer.ruffle().load(loadOptions);
+      await player.ruffle().load(loadOptions);
     } catch (error) {
-      currentPlayer.remove();
-      currentPlayer = null;
-      mount.replaceChildren(emptyState);
+      if (currentPlayer === player) {
+        player.remove();
+        currentPlayer = null;
+        mount.replaceChildren(emptyState);
+      }
+      if (loadId !== activeLoadId || modal.hidden) return;
       throw new Error("Ruffle could not play this SWF: " + (error && error.message ? error.message : "unsupported file or missing game assets."));
+    }
+    if (loadId !== activeLoadId || modal.hidden) {
+      player.remove();
+      if (currentPlayer === player) currentPlayer = null;
+      return;
     }
     status.textContent = game.title + " is ready. Tap the game to play.";
     requestAnimationFrame(sizeGameToViewport);
+    finishGameLoading(loadId);
   }
 
   async function fetchBundledGame(game) {
@@ -755,7 +851,15 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   async function openGame(gameId) {
     const game = GAMES[gameId];
     if (!game) return;
+    const loadId = ++activeLoadId;
+    clearTimeout(loadingNoteTimer);
+    if (currentPlayer) {
+      try { currentPlayer.ruffle().pause(); } catch (_) {}
+      currentPlayer.remove();
+      currentPlayer = null;
+    }
     currentGameId = gameId;
+    gameExtra.open = false;
     document.getElementById("gameName").textContent = "EMILY'S ARCADE / " + game.title.toUpperCase();
     emptyTitle.textContent = game.title.toUpperCase();
     openOriginalBtn.href = game.archiveUrl || "#";
@@ -781,11 +885,13 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     emptyMessage.textContent = "The original game is loading. No separate file import is needed.";
     mount.replaceChildren(emptyState);
     removeSavedBtn.hidden = true;
+    showGameLoading(gameId);
 
     let saved = null;
     try { saved = await getSavedGame(gameId); } catch (_) {
       // IndexedDB may be unavailable in private browsing; the bundled game can still play.
     }
+    if (loadId !== activeLoadId || modal.hidden) return;
 
     let gameBlob = null;
     let gameFileName = game.fileName;
@@ -796,6 +902,7 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
     } else {
       try {
         gameBlob = await fetchBundledGame(game);
+        if (loadId !== activeLoadId || modal.hidden) return;
         try {
           const localFile = new File([gameBlob], game.fileName, { type: "application/x-shockwave-flash" });
           await saveGame(localFile, gameId);
@@ -803,25 +910,26 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
         } catch (_) {
           // Playback does not depend on IndexedDB; keep the bundled file usable.
         }
+        if (loadId !== activeLoadId || modal.hidden) return;
         await updateInstalledStates();
       } catch (error) {
-        mount.replaceChildren(emptyState);
-        emptyMessage.textContent = "The original game file could not be loaded. Refresh the page and try again.";
-        status.textContent = error.message || "The game file could not be loaded.";
+        showGameError("Couldn't download the game file. Check your connection and try again.", loadId);
         return;
       }
     }
 
+    if (loadId !== activeLoadId || modal.hidden) return;
     try {
-      await playBlob(gameBlob, gameId, gameFileName);
+      await playBlob(gameBlob, gameId, gameFileName, loadId);
     } catch (error) {
-      mount.replaceChildren(emptyState);
-      emptyMessage.textContent = "The game file is available, but Ruffle could not start it. Check your connection and try again.";
-      status.textContent = error.message || "The game could not be started.";
+      showGameError("The original game couldn't start. Check your connection, then tap Try Again.", loadId);
     }
   }
 
   function closeGame() {
+    activeLoadId += 1;
+    clearTimeout(loadingNoteTimer);
+    loadingOverlay.hidden = true;
     releaseVirtualKeys();
     if (currentPlayer) {
       try { currentPlayer.ruffle().pause(); } catch (_) {}
@@ -898,6 +1006,8 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
   picker.addEventListener("change", async () => {
     const file = picker.files && picker.files[0];
     if (!file) return;
+    const loadId = ++activeLoadId;
+    showGameLoading(currentGameId);
     try {
       const header = new TextDecoder().decode(await file.slice(0, 3).arrayBuffer());
       if (!["FWS", "CWS", "ZWS"].includes(header)) {
@@ -908,19 +1018,18 @@ footer{text-align:center;color:#777;border-top:1px solid #333;padding:30px 15px;
       }
       status.textContent = "Saving " + file.name + " privately on this device…";
       await saveGame(file, currentGameId);
+      if (loadId !== activeLoadId || modal.hidden) return;
       removeSavedBtn.hidden = false;
       await updateInstalledStates();
-      await playBlob(file, currentGameId, file.name);
+      await playBlob(file, currentGameId, file.name, loadId);
     } catch (error) {
-      status.textContent = error.message || "The game could not be loaded.";
-      if (removeSavedBtn.hidden === false) {
-        emptyMessage.textContent = "Your SWF was saved on this device, but playback did not start. The file is still available to retry.";
-      }
+      showGameError("That file couldn't be loaded. Try another SWF, or return to the game collection.", loadId);
     } finally {
       picker.value = "";
     }
   });
 
+  retryGameBtn.addEventListener("click", () => openGame(currentGameId));
   document.getElementById("hudBackBtn").addEventListener("click", closeGame);
   hudMenuBtn.addEventListener("click", () => setMenu(!modal.classList.contains("menu-open")));
   stage.addEventListener("pointerdown", () => {

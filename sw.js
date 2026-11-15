@@ -1,4 +1,4 @@
-const CACHE_NAME = "emily-arcade-shell-v9";
+const CACHE_NAME = "emily-arcade-shell-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -35,7 +35,7 @@ self.addEventListener("fetch", event => {
   if (request.mode === "navigate") {
     event.respondWith((async () => {
       try {
-        const fresh = await fetch(request);
+        const fresh = await fetch(request, { cache: "no-store" });
         if (fresh.ok) {
           const cache = await caches.open(CACHE_NAME);
           await cache.put("./", fresh.clone());
